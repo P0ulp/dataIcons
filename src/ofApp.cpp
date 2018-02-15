@@ -83,21 +83,21 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    if( savePdf ){
-        ofBeginSaveScreenAsPDF(ofGetTimestampString()+"Layer-"+ofToString(layer)+".pdf", false);
-        layer++;
-    }
     ofSetColor(255,255,255);
-    bg.draw(0,0,ofGetWidth(),ofGetHeight());
-    
-    ofSetLineWidth(8);
+    bg.draw(0,0,wPlanche,hPlanche);
     
     float rowSize = wPlanche/float(rows);
     float lineSize = hPlanche/float(lines);
     
+    if( savePdf ){
+        ofBeginSaveScreenAsPDF(ofGetTimestampString()+"Layer-"+ofToString(layer)+".pdf", false);
+        layer++;
+    }
+    
     ofSetColor(255,255,255);
     float distanceStop = distanceBG/2.9;
-    
+    ofSetLineWidth(8);
+
     for(int i = 0; i < linesDatasBG.size();i++){
         ofDrawLine(linesDatasBG[i].x,linesDatasBG[i].y,linesDatasBG[i].z,linesDatasBG[i].w);
         distanceStop -= ofDist(linesDatasBG[i].x,linesDatasBG[i].y,linesDatasBG[i].z,linesDatasBG[i].w);
@@ -107,14 +107,28 @@ void ofApp::draw(){
                 ofBeginSaveScreenAsPDF(ofGetTimestampString()+"Layer-"+ofToString(layer)+".pdf", false);
                 layer++;
             }
-            distanceStop = distanceFG/3;
+            distanceStop = distanceBG/2.9;
         }
     }
-    /*ofSetLineWidth(4);
+    
+    if(savePdf){
+        ofEndSaveScreenAsPDF();
+        ofBeginSaveScreenAsPDF(ofGetTimestampString()+"Layer-"+ofToString(layer)+".pdf", false);
+        layer++;
+    }
+    
+    ofSetLineWidth(4);
     ofSetColor(49, 79, 192);
     for(int i=0; i<linesFG.size();i++){
         linesFG[i].draw();
-    }*/
+        if(savePdf){
+            ofEndSaveScreenAsPDF();
+            if(i<linesFG.size()-1){
+                ofBeginSaveScreenAsPDF(ofGetTimestampString()+"Layer-"+ofToString(layer)+".pdf", false);
+                layer++;
+            }
+        }
+    }
 
    
     if(savePdf){
@@ -126,6 +140,10 @@ void ofApp::draw(){
     /* ---------- DEBUG GUI ---------- */
     /* ------------------------------- */
     if(debug){
+        ofSetLineWidth(1);
+        ofSetColor(0, 255, 0);
+        lineFG.draw();
+        
         ofSetColor(0, 266, 0);
         ofNoFill();
         for(int i = 0; i < circles.size();i++){
@@ -166,8 +184,8 @@ bool ofApp::compCells(ofVec2f i, ofVec2f j){
 
 //--------------------------------------------------------------
 void ofApp::generateDesign(){
-    float rowSize = ofGetWidth()/float(rows);
-    float lineSize = ofGetHeight()/float(lines);
+    float rowSize = wPlanche/float(rows);
+    float lineSize = hPlanche/float(lines);
     
     //reset the number of touchpoint by cells
     cells.clear();
@@ -192,7 +210,7 @@ void ofApp::generateDesign(){
     //generate a line based on the ordered cells
     lineFG.clear();
     for(int i=0; i<cellsSorted.size(); i++){
-        if(cellsSorted[i].y>0 && i+1<cellsSorted.size()){
+        if(cellsSorted[i].y>0){
             int x = int(cellsSorted[i].x)%rows;
             int y = (cellsSorted[i].x - x)/rows;
             
@@ -205,19 +223,24 @@ void ofApp::generateDesign(){
             lineFG.addVertex(ofPoint(x,y));
         }
     }
+    
     distanceFG = lineFG.getLengthAtIndex(lineFG.size()-1);
     lineDistanceFG.set(ofToString((distanceFG*ratioSketchPlanche)/1000));
     
+    linesFG.clear();
     float distanceStop = distanceFG/2.9;
     ofPolyline tempLine;
-    
-    /*for(int i=0;i<lineFG.size();i++){
+    tempLine.addVertex(lineFG[0]);
+    for(int i=1;i<lineFG.size();i++){
         tempLine.addVertex(lineFG[i]);
-        distanceStop -= ofDist(<#float x1#>, <#float y1#>, lineFG[i], lineFG[i])
-        if(distanceStop < 0){
-            
+        distanceStop -= ofDist(lineFG[i].x,lineFG[i].y, lineFG[i-1].x, lineFG[i-1].y);
+        if(distanceStop < 0 || i == lineFG.size()-1){
+            linesFG.push_back(tempLine);
+            distanceStop = distanceFG/2.9;
+            tempLine.clear();
+            tempLine.addVertex(lineFG[i]);
         }
-    }*/
+    }
     
     //generate circles
     circles.clear();

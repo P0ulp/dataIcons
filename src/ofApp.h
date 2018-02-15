@@ -51,7 +51,7 @@ class ofApp : public ofBaseApp{
     
         float wPlanche = 454;
         float hPlanche = 807;
-        float ratioSketchPlanche = 160.0/ofGetWidth();
+        double ratioSketchPlanche = 290.0/hPlanche;
     
         int layer;
         
