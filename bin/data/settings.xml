@@ -3,7 +3,13 @@
 	<xDelta>32</xDelta>
 	<yDelta>32</yDelta>
 <group/>
-<size>0.175</size>
+<size>0.275</size>
 	<row>7</row>
 	<line>11</line>
+<BG_line_lentgh/>
+	<FG_line_lentgh/>
+<rows>16</rows>
+	<lines>28</lines>
+<BG_line_lentgh__m_>9.0905</BG_line_lentgh__m_>
+	<FG_line_lentgh__m_>8.69231</FG_line_lentgh__m_>
 </group>

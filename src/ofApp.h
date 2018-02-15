@@ -28,17 +28,32 @@ class ofApp : public ofBaseApp{
     private:
         vector<ofVec3f> points;
         vector<ofVec3f> circles;
-        vector<ofVec4f> lines;
+        vector<ofVec4f> linesDatasBG;
         vector<int> cells;
         vector<ofVec2f> cellsSorted;
+    
+        ofPolyline lineFG;
+        vector<ofPolyline> linesFG;
+        ofImage bg;
+    
         ofxPanel gui;
         ofParameter<float> size;
-        ofParameter<int> row;
-        ofParameter<int> line;
+        ofParameter<int> rows;
+        ofParameter<int> lines;
+        ofParameter<string> lineDistanceFG;
+        ofParameter<string> lineDistanceBG;
     
         bool debug;
+        bool savePdf;
     
+        float distanceBG;
+        float distanceFG;
     
+        float wPlanche = 454;
+        float hPlanche = 807;
+        float ratioSketchPlanche = 160.0/ofGetWidth();
+    
+        int layer;
         
 		
 };

@@ -3,12 +3,25 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     //string ouput = ofSystem("/users/sallary/Library/Android/sdk/platform-tools/adb shell getevent -l -c 5 /dev/input/event2");
-    //ofLogNotice(output);
+    
+    //1440 x 2560 taille de la captation sur pixel XL
+    //454 x 807 taille de la planche en pixel à 72dpi
+    //595 x 842 taille A4 en pixel à 72dpi
+    
+    ofSetVerticalSync(true);
+    
+    bg.load("goldBG.jpeg");
     
     debug = true;
+    savePdf = false;
+    layer = 0;
+    
+    float ratioX =1440.0/wPlanche;
+    float ratioY =2560.0/hPlanche;
+    
     ofVec3f point = ofVec3f(-1,-1,-1);
     
-    // this is our buffer to stroe the text data
+    // this is our buffer to store the text data
     ofBuffer buffer = ofBufferFromFile("_data.txt");
     
     if(buffer.size()) {
@@ -24,7 +37,7 @@ void ofApp::setup(){
                         point.y = points[points.size()-1].y;
                     }
                     else{
-                        point.x = ofHexToInt(line.substr(52 ,8))/4.0;
+                        point.x = ofHexToInt(line.substr(52 ,8))/ratioX;
                     }
                     point.z = ofToFloat(line.substr(4 ,12));
                 }
@@ -33,7 +46,7 @@ void ofApp::setup(){
                         point.x = points[points.size()-1].x;
                     }
                     else{
-                        point.y = ofHexToInt(line.substr(52 ,8))/4.0;
+                        point.y = ofHexToInt(line.substr(52 ,8))/ratioY;
                     }
                     point.z = ofToFloat(line.substr(4 ,12));
                 }
@@ -47,87 +60,100 @@ void ofApp::setup(){
         
     }
     
-    size.set("size",2,0,5.0);
-    row.set("row",3,0,100);
-    line.set("line",3,0,100);
+    size.set("size",2,0,3);
+    rows.set("rows",3,0,100);
+    lines.set("lines",3,0,100);
+    lineDistanceBG.set("BG line lentgh (m)","");
+    lineDistanceFG.set("FG line lentgh (m)","");
     
     ofSetCircleResolution(50);
     
     gui.setup();
     gui.add(size);
-    gui.add(row);
-    gui.add(line);
+    gui.add(rows);
+    gui.add(lines);
+    gui.add(lineDistanceBG);
+    gui.add(lineDistanceFG);
     
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    ofBackground(255, 207, 64);
-    ofSetLineWidth(4);
-    //1440 x 2560
-    //360 x 640
+    if( savePdf ){
+        ofBeginSaveScreenAsPDF(ofGetTimestampString()+"Layer-"+ofToString(layer)+".pdf", false);
+        layer++;
+    }
+    ofSetColor(255,255,255);
+    bg.draw(0,0,ofGetWidth(),ofGetHeight());
     
-    float rowSize = ofGetWidth()/float(row);
-    float lineSize = ofGetHeight()/float(line);
-
+    ofSetLineWidth(8);
+    
+    float rowSize = wPlanche/float(rows);
+    float lineSize = hPlanche/float(lines);
     
     ofSetColor(255,255,255);
-    for(int i = 0; i < lines.size();i++){
-        ofDrawLine(lines[i].x,lines[i].y,lines[i].z,lines[i].w);
-    }
-        
-    ofSetColor(49, 79, 192);
-    for(int i = 0; i < circles.size();i++){
-        if(circles[i].z > rowSize/2){
-            ofNoFill();
-        }
-        if(circles[i].z < rowSize/2){
-            //ofDrawCircle(circles[i].x, circles[i].y, circles[i].z/2);
-        }
-        ofFill();
-    }
+    float distanceStop = distanceBG/2.9;
     
-    for(int i=0; i<cellsSorted.size(); i++){
-        if(cellsSorted[i].y>0 && i+1<cellsSorted.size()){
-            int x1 = int(cellsSorted[i].x)%row;
-            int y1 = (cellsSorted[i].x - x1)/row;
-            int x2 = int(cellsSorted[i+1].x)%row;
-            int y2 = (cellsSorted[i+1].x - x2)/row;
-            ofLogNotice() << x1 << " / " <<y1 << "-" << cellsSorted[i].x << endl;
-
-            x1 = (rowSize/2)+x1*rowSize;
-            y1 = (lineSize/2)+y1*lineSize;
-            x2 = (rowSize/2)+x2*rowSize;
-            y2 = (lineSize/2)+y2*lineSize;
-            
-            ofDrawLine(x1,y1,x2,y2);
-            ofLogNotice() << x1 << " / " <<y1 << "-" << cellsSorted[i].x << endl;
+    for(int i = 0; i < linesDatasBG.size();i++){
+        ofDrawLine(linesDatasBG[i].x,linesDatasBG[i].y,linesDatasBG[i].z,linesDatasBG[i].w);
+        distanceStop -= ofDist(linesDatasBG[i].x,linesDatasBG[i].y,linesDatasBG[i].z,linesDatasBG[i].w);
+        if(distanceStop < 0 && savePdf){
+            if(savePdf){
+                ofEndSaveScreenAsPDF();
+                ofBeginSaveScreenAsPDF(ofGetTimestampString()+"Layer-"+ofToString(layer)+".pdf", false);
+                layer++;
+            }
+            distanceStop = distanceFG/3;
         }
     }
-        
-    ofLogNotice() << "---------- ";
+    /*ofSetLineWidth(4);
+    ofSetColor(49, 79, 192);
+    for(int i=0; i<linesFG.size();i++){
+        linesFG[i].draw();
+    }*/
+
+   
+    if(savePdf){
+        layer = 0;
+        savePdf = false;
+    }
     
     /* ------------------------------- */
     /* ---------- DEBUG GUI ---------- */
     /* ------------------------------- */
     if(debug){
+        ofSetColor(0, 266, 0);
+        ofNoFill();
+        for(int i = 0; i < circles.size();i++){
+            if(circles[i].z > rowSize/2){
+                ofDrawCircle(circles[i].x, circles[i].y, circles[i].z/2);
+            }
+            
+        }
+        ofFill();
+        
         ofSetColor(255, 0, 0);
         for(int i=0; i<points.size(); i++){
             ofDrawCircle(points[i].x,points[i].y,1);
         }
         
-        ofSetColor(200, 200, 200);
-        for(int i = 1; i <= line;i++){
-            ofDrawLine(0,i*lineSize,ofGetWidth(),i*lineSize);
+        ofSetLineWidth(1);
+        ofSetColor(100, 100, 100);
+        for(int i = 1; i <= lines;i++){
+            ofDrawLine(0,i*lineSize,wPlanche,i*lineSize);
         }
-        for(int i = 1; i <= row;i++){
-            ofDrawLine(i*rowSize,0,i*rowSize,ofGetHeight());
+        for(int i = 1; i <= rows;i++){
+            ofDrawLine(i*rowSize,0,i*rowSize,hPlanche);
         }
+
+        ofNoFill();
+        ofSetColor(0, 100, 255);
+        ofDrawRectangle(0,  0, wPlanche, hPlanche);
+        ofFill;
         
         gui.draw();
     }
@@ -140,52 +166,79 @@ bool ofApp::compCells(ofVec2f i, ofVec2f j){
 
 //--------------------------------------------------------------
 void ofApp::generateDesign(){
+    float rowSize = ofGetWidth()/float(rows);
+    float lineSize = ofGetHeight()/float(lines);
+    
+    //reset the number of touchpoint by cells
     cells.clear();
-    for(int i = 0; i < row*line;i++){
+    for(int i = 0; i < rows*lines;i++){
         cells.push_back(0);
     }
     
-    float rowSize = ofGetWidth()/float(row);
-    float lineSize = ofGetHeight()/float(line);
-    
+    //count the number of touchpoint by cells
     for(int i=0; i<points.size(); i++){
         float x = floor(points[i].x/rowSize);
         float y = floor(points[i].y/lineSize);
-        //ofLogNotice() << "Px :" << points[i].x << " / Py :" <<points[i].y;
-        //ofLogNotice() << "x :" << x << " / y :" << y << " / val :" << x+y*row;
-        cells[x+y*row] +=1;
+        cells[x+y*rows] +=1;
     }
-    //ofLogNotice() << "______________________";
     
+    //generate a vector of cell ordered min to max points by cells
     cellsSorted.clear();
     for(int i=0; i<cells.size(); i++){
         cellsSorted.push_back(ofVec2f(i,cells[i]));
     }
-    
     std::sort(cellsSorted.begin(),cellsSorted.end(), ofApp::compCells);
     
+    //generate a line based on the ordered cells
+    lineFG.clear();
+    for(int i=0; i<cellsSorted.size(); i++){
+        if(cellsSorted[i].y>0 && i+1<cellsSorted.size()){
+            int x = int(cellsSorted[i].x)%rows;
+            int y = (cellsSorted[i].x - x)/rows;
+            
+            x = (rowSize/2)+x*rowSize;
+            y = (lineSize/2)+y*lineSize;
+            
+            x = x+ofRandom(-rowSize*0.25,rowSize*0.25);
+            y = y+ofRandom(-lineSize*0.25,lineSize*0.25);
+            
+            lineFG.addVertex(ofPoint(x,y));
+        }
+    }
+    distanceFG = lineFG.getLengthAtIndex(lineFG.size()-1);
+    lineDistanceFG.set(ofToString((distanceFG*ratioSketchPlanche)/1000));
+    
+    float distanceStop = distanceFG/2.9;
+    ofPolyline tempLine;
+    
+    /*for(int i=0;i<lineFG.size();i++){
+        tempLine.addVertex(lineFG[i]);
+        distanceStop -= ofDist(<#float x1#>, <#float y1#>, lineFG[i], lineFG[i])
+        if(distanceStop < 0){
+            
+        }
+    }*/
+    
+    //generate circles
     circles.clear();
-    for(int i = 0; i < line;i++){
-        for(int j = 0; j < row;j++){
-            if(cells[i*row+j] > 0){
+    for(int i = 0; i < lines;i++){
+        for(int j = 0; j < rows;j++){
+            if(cells[i*rows+j] > 0){
                 float x = j * rowSize;
                 float y = i * lineSize;
-                float circleSize = cells[i*row+j]*size;
-                if(circleSize < rowSize){
-                    circleSize = max(min(float(cells[i*row+j]),float(rowSize*1.5)),rowSize/4)+ofRandom(rowSize/5);
-                    x = x+ofRandom(-rowSize/2,rowSize/2);
-                    y = y+ofRandom(-lineSize/2,lineSize/2);
-                }
+                float circleSize = cells[i*rows+j]*size;
                 circles.push_back(ofVec3f(x+rowSize/2,y+lineSize/2,circleSize));
             }
         }
     }
     
-    lines.clear();
+    //
+    linesDatasBG.clear();
+    distanceBG = 0;
     for(int i=0; i < circles.size();i++){
         if(circles[i].z > rowSize){
             for(int j=0; j < circles.size();j++){
-                if(i!=j && circles[j].z > rowSize){
+                if(i!=j && circles[j].z > rowSize*2){
                     float d = ofDist(circles[i].x,circles[i].y,circles[j].x,circles[j].y);
                     float aR = circles[i].z/2;
                     float bR = circles[j].z/2;
@@ -212,12 +265,15 @@ void ofApp::generateDesign(){
                         float pY = paY+ofRandom(paY*0.1,paY*0.25);
                         float pX = (pY-b)/a;
                         
-                        lines.push_back(ofVec4f(pXbis,pYbis, pX, pY));
+                        linesDatasBG.push_back(ofVec4f(pXbis,pYbis, pX, pY));
+                        distanceBG += ofDist(pXbis,pYbis, pX, pY);
                     }
                 }
             }
         }
     }
+    lineDistanceBG.set(ofToString((distanceBG*ratioSketchPlanche)/1000));
+    
 }
 
 //--------------------------------------------------------------
@@ -232,6 +288,9 @@ void ofApp::keyReleased(int key){
     }
     else if(key == 'g'){
         generateDesign();
+    }
+    else if(key == 's' ){
+        savePdf = true;
     }
 }
 
