@@ -16,13 +16,13 @@ void ofApp::setup(){
     savePdf = false;
     layer = 0;
     
-    float ratioX =1440.0/wPlanche;
-    float ratioY =2560.0/hPlanche;
+    float ratioX =2560.0/wPlanche;
+    float ratioY =1440.0/hPlanche;
     
     ofVec3f point = ofVec3f(-1,-1,-1);
     
     // this is our buffer to store the text data
-    ofBuffer buffer = ofBufferFromFile("_data.txt");
+    ofBuffer buffer = ofBufferFromFile("dataSC.txt");
     
     if(buffer.size()) {
         for (ofBuffer::Line it = buffer.getLines().begin(), end = buffer.getLines().end(); it != end; ++it) {
@@ -33,20 +33,20 @@ void ofApp::setup(){
             // make sure its not a empty line
             if(line.empty() == false) {
                 if(line.find("ABS_MT_POSITION_X") != std::string::npos){
+                    if(point.y != -1){
+                        point.x = points[points.size()-1].x;
+                    }
+                    else{
+                        point.y = hPlanche-ofHexToInt(line.substr(52 ,8))/ratioY;
+                    }
+                    point.z = ofToFloat(line.substr(4 ,12));
+                }
+                else if(line.find("ABS_MT_POSITION_Y") != std::string::npos){
                     if(point.x != -1){
                         point.y = points[points.size()-1].y;
                     }
                     else{
                         point.x = ofHexToInt(line.substr(52 ,8))/ratioX;
-                    }
-                    point.z = ofToFloat(line.substr(4 ,12));
-                }
-                else if(line.find("ABS_MT_POSITION_Y") != std::string::npos){
-                    if(point.y != -1){
-                        point.x = points[points.size()-1].x;
-                    }
-                    else{
-                        point.y = ofHexToInt(line.substr(52 ,8))/ratioY;
                     }
                     point.z = ofToFloat(line.substr(4 ,12));
                 }
@@ -118,7 +118,9 @@ void ofApp::draw(){
     }
     
     ofSetLineWidth(4);
-    ofSetColor(49, 79, 192);
+    //ofSetColor(49, 79, 192);
+    //ofSetColor(255, 0, 0);
+    ofSetColor(255, 252, 0);
     for(int i=0; i<linesFG.size();i++){
         linesFG[i].draw();
         if(savePdf){
@@ -150,13 +152,17 @@ void ofApp::draw(){
             if(circles[i].z > rowSize/2){
                 ofDrawCircle(circles[i].x, circles[i].y, circles[i].z/2);
             }
-            
         }
         ofFill();
         
         ofSetColor(255, 0, 0);
         for(int i=0; i<points.size(); i++){
             ofDrawCircle(points[i].x,points[i].y,1);
+        }
+        
+        ofSetColor(125, 125, 0);
+        for(int i = 0; i < cross.size();i++){
+            ofDrawCircle(cross[i].x, cross[i].y, 5);
         }
         
         ofSetLineWidth(1);
@@ -256,12 +262,13 @@ void ofApp::generateDesign(){
     }
     
     //
+    cross.clear();
     linesDatasBG.clear();
     distanceBG = 0;
     for(int i=0; i < circles.size();i++){
-        if(circles[i].z > rowSize){
+        if(circles[i].z > rowSize/2){
             for(int j=0; j < circles.size();j++){
-                if(i!=j && circles[j].z > rowSize*2){
+                if(i!=j && circles[j].z > rowSize/2){
                     float d = ofDist(circles[i].x,circles[i].y,circles[j].x,circles[j].y);
                     float aR = circles[i].z/2;
                     float bR = circles[j].z/2;
@@ -278,18 +285,31 @@ void ofApp::generateDesign(){
                         float pbX = circles[i].x + x * ex + y * ey;
                         float pbY = circles[i].y + x * ey - y * ex;
                         
-                        float pYbis = paY-ofRandom(paY*0.25,paY*0.75);
-                        float pXbis = paX+ofRandom(-paX*0.2,paX*0.2);
+                        if(paX < wPlanche-rowSize && paY < hPlanche-lineSize && paX > rowSize && paY > lineSize){
+                           cross.push_back(ofVec2f(paX, paY));
                         
-                        float a = (paY - pYbis) / (paX - pXbis);
-                        float b = paY - a* paX;
+                            /* ---- SC ---- */
+                            float pYbis = max(paY-ofRandom(lineSize*4,lineSize*8), ofRandom(lineSize*0.5,lineSize*2));
+                            float pXbis = paX+ofRandom(-rowSize*0.25,rowSize*0.25);
                         
+                            /* ---- YT / FB ---- */
+                            /*float pXbis = max(paX-ofRandom(rowSize*6,rowSize*12), ofRandom(rowSize*0.5,rowSize*2));
+                            float pYbis = paY+ofRandom(-lineSize*0.85,lineSize*0.85);*/
                         
-                        float pY = paY+ofRandom(paY*0.1,paY*0.25);
-                        float pX = (pY-b)/a;
+                            float a = (paY - pYbis) / (paX - pXbis);
+                            float b = paY - a* paX;
+                            
+                            /* ---- YT / FB ---- */
+                            /*float pX = min(paX+ofRandom(rowSize*6,rowSize*12), wPlanche-ofRandom(rowSize*0.5,rowSize*2));
+                            float pY = a*pX+b;*/
+                            
+                            /* ---- SC ---- */
+                            float pY = min(paY+ofRandom(lineSize*4,lineSize*8), hPlanche-ofRandom(lineSize*0.5,lineSize*2));
+                            float pX = (pY-b)/a;
                         
-                        linesDatasBG.push_back(ofVec4f(pXbis,pYbis, pX, pY));
-                        distanceBG += ofDist(pXbis,pYbis, pX, pY);
+                            linesDatasBG.push_back(ofVec4f(pXbis,pYbis, pX, pY));
+                            distanceBG += ofDist(pXbis,pYbis, pX, pY);
+                        }
                     }
                 }
             }

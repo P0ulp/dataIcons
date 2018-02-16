@@ -31,6 +31,7 @@ class ofApp : public ofBaseApp{
         vector<ofVec4f> linesDatasBG;
         vector<int> cells;
         vector<ofVec2f> cellsSorted;
+        vector<ofVec2f> cross;
     
         ofPolyline lineFG;
         vector<ofPolyline> linesFG;
@@ -46,12 +47,13 @@ class ofApp : public ofBaseApp{
         bool debug;
         bool savePdf;
     
+    
         float distanceBG;
         float distanceFG;
     
-        float wPlanche = 454;
-        float hPlanche = 807;
-        double ratioSketchPlanche = 290.0/hPlanche;
+        float wPlanche = 807;
+        float hPlanche = 454;
+        double ratioSketchPlanche = 290.0/wPlanche;
     
         int layer;
         
